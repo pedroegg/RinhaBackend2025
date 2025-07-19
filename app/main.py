@@ -44,3 +44,4 @@ logger.info('init completed!')
 # another option would be to use the app1 and app2 to handle the payment processing with yours workers
 # since we can configure uWSGI to have a lot of workers, maybe we can process a lot of requests simultaneously
 # but then I will need to worry about bottlenecks, because if the payments processors become unavailable for so long I'm going to have problems
+# and also, have a lot of workers running is very heavy
