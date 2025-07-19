@@ -1,0 +1,18 @@
+services:
+  app-setup:
+    environment:
+      ENV: development
+
+  app1:
+    environment:
+      ENV: development
+      FLASK_ENV: development
+      FLASK_DEBUG: 1
+    restart: "no"
+
+  app2:
+    environment:
+      ENV: development
+      FLASK_ENV: development
+      FLASK_DEBUG: 1
+    restart: "no"

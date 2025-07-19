@@ -1,0 +1,22 @@
+[project]
+name = "rinhabackend2025"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "PedroEgg",email = "pedro.eggg@gmail.com"}
+]
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "load-dotenv (>=0.1.0,<0.2.0)",
+    "pydantic (>=2.11.7,<3.0.0)",
+    "tenacity (>=9.1.2,<10.0.0)",
+    "requests (>=2.32.4,<3.0.0)",
+    "setuptools (>=80.9.0,<81.0.0)",
+    "flask (>=3.1.1,<4.0.0)"
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
