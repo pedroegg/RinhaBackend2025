@@ -1,16 +1,18 @@
 import logging
 logger = logging.getLogger('Handler')
 
+from flask import make_response, Response
+
 import json
-import uuid
-from datetime import datetime
 
-import flask
-from flask import request, Response
-
+from api.schema import (
+	ProcessPaymentInput,
+	PaymentSummaryInput, PaymentSummaryOutput
+)
+from library.errors import BaseError, InternalError, BadRequest
 import library.errors as errors
 
-def process_payment() -> Response:
+def process_payment(input: ProcessPaymentInput):
 	"""
 	{
 		"correlationId": "4a7901b8-7d26-4d9d-aa19-4dc1c7cf60b3",
@@ -21,12 +23,12 @@ def process_payment() -> Response:
 	status_code 200
 	"""
 
-	res = flask.make_response()
+	res = make_response()
 	res.content_type = 'application/json; charset=utf-8'
 	res.status_code = 200
 	return res
 
-def payments_summary() -> Response:
+def payments_summary(input: PaymentSummaryInput):
 	"""
 	Querystring params 'from' and 'to' (optional)
 	from=2020-07-10T12:34:56.000Z&to=2020-07-10T12:35:56.000Z
@@ -45,7 +47,21 @@ def payments_summary() -> Response:
 	all fields are required
 	"""
 
-	res = flask.make_response()
+	result = {
+		"default": {
+			"requests_number": 43236,
+			"total_amount": 415542345
+		},
+		"fallback": {
+			"requests_number": 423545,
+			"total_amount": 329347
+		}
+	}
+
+	output = PaymentSummaryOutput().dump(result)
+
+	res = make_response()
+	res.set_data(json.dumps(output, ensure_ascii=False))
 	res.content_type = 'application/json; charset=utf-8'
 	res.status_code = 200
 	return res

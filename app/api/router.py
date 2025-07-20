@@ -1,26 +1,38 @@
 import logging
 logger = logging.getLogger("Router")
 
-from flask import Blueprint, request, render_template
+from flask import make_response, Response
+from flask_smorest import Blueprint
+from marshmallow.exceptions import ValidationError
+
 import json
 import requests
 
 import api.handler as Handler
-from library.errors import InternalError, BaseError
+from api.schema import (
+	ProcessPaymentPayload, ProcessPaymentInput,
+	PaymentSummaryArgs, PaymentSummaryInput, PaymentSummaryOutput
+)
+from library.errors import BaseError, InternalError, BadRequest
 
 api = Blueprint('api', __name__)
 
 # ------------ API Routes ------------
 
-@api.route('/payments', methods=['POST'])
-def process_payment():
-	return Handler.process_payment()
+@api.get('/payments-summary')
+@api.arguments(PaymentSummaryArgs, location='query')
+@api.response(200, PaymentSummaryOutput)
+def payments_summary(payload: PaymentSummaryInput):
+	return Handler.payments_summary(payload)
 
-@api.route('/payments-summary', methods=['GET'])
-def payments_summary():
-	return Handler.payments_summary()
+@api.post('/payments')
+@api.arguments(ProcessPaymentPayload, location='json')
+@api.response(201)
+def process_payment(payload: ProcessPaymentInput):
+	return Handler.process_payment(payload)
 
-@api.route('/test', methods=['GET'])
+@api.get('/test')
+@api.response(200)
 def test_request():
 	return requests.get('https://httpbin.org/delay/5').json()
 
@@ -29,37 +41,27 @@ def test_request():
 # ---------- Error Handlers ----------
 
 @api.errorhandler(BaseError)
-def handle_crafted_errors(e: BaseError):
-	response = e.get_response()
-	response.data = json.dumps({
+def handle_error(e: BaseError) -> Response:
+	payload = {
 		'error': {
 			'code': e.code,
 			'name': e.name,
 			'description': e.description,
-		},
-	})
-	response.content_type = 'application/json'
-	response.charset = 'utf-8'
+		}
+	}
 
-	return response
+	res = make_response()
+	res.content_type = 'application/json; charset=utf-8'
+	res.status_code = e.code
+	res.set_data(json.dumps(payload, ensure_ascii=False))
+	return res
 
 @api.errorhandler(Exception)
-def handle_exception(e: Exception):
+def handle_exception(e: Exception) -> Response:
+	if isinstance(e, ValidationError):
+		return handle_error(BadRequest(e.normalized_messages()))
+
 	logger.error(e, exc_info=1)
-	return handle_crafted_errors(InternalError(e.__str__()))
+	return handle_error(InternalError(e.__str__()))
 
 # ------------------------------------
-
-"""
-@api.route('/pessoas/<string:id>', methods=['GET'])
-def GetPessoaByID(id: str):
-	return Handler.GetPessoaByID(id)
-
-@api.route('/pessoas', methods=['GET'])
-def FilterPessoas():
-	return Handler.FilterPessoas()
-
-@api.route('/contagem-pessoas', methods=['GET'])
-def CountPessoas():
-	return Handler.CountPessoas()
-"""

@@ -13,7 +13,8 @@ dependencies = [
     "tenacity (>=9.1.2,<10.0.0)",
     "requests (>=2.32.4,<3.0.0)",
     "setuptools (>=80.9.0,<81.0.0)",
-    "flask (>=3.1.1,<4.0.0)"
+    "flask-smorest (>=0.46.1,<0.47.0)",
+    "simplejson (>=3.20.1,<4.0.0)",
 ]
 
 
