@@ -29,9 +29,3 @@ class PaymentSummaryOutput(Schema):
 
 	default = fields.Nested(_SummaryItem, data_key='default', dump_only=True, required=True)
 	fallback = fields.Nested(_SummaryItem, data_key='fallback', dump_only=True, required=True)
-
-class TestQuery(Schema):
-	delay = fields.Integer(data_key='delay', load_only=True, required=True)
-
-class TestInput(TypedDict):
-	delay: int

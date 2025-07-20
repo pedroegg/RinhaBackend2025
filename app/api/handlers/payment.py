@@ -1,14 +1,10 @@
 import logging
 logger = logging.getLogger('Handler')
 
-from flask import make_response
-from dataclasses import asdict
 from decimal import Decimal
-import requests
 
-from api.entity import PaymentSummaryEntity, PaymentSummaryItem
-from api.schema import ProcessPaymentInput, PaymentSummaryInput, TestInput
-
+from entities.payment import PaymentSummaryEntity, PaymentSummaryItem
+from schemas.payment import ProcessPaymentInput, PaymentSummaryInput
 from library.errors import InternalError, BadRequest, UnprocessableEntity
 
 def process_payment(data: ProcessPaymentInput) -> None:
@@ -23,6 +19,3 @@ def payments_summary(data: PaymentSummaryInput) -> PaymentSummaryEntity:
 	)
 
 	return summary
-
-def test(data: TestInput) -> None:
-	requests.get(f'https://httpbin.org/delay/{data['delay']}')

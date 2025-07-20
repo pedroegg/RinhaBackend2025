@@ -1,28 +1,20 @@
-# ------ loading environment ------
 from dotenv import load_dotenv
 import os
 
 if os.getenv('ENV') == 'development':
 	load_dotenv('.env')
 	# do something if needed
-
 else:
 	load_dotenv('prod.env', override=True)
-# ------------------------------
 
-# -------- init project --------
 import logging
 logging.basicConfig(level=int(os.getenv('LOG_LEVEL')), force=True)
-logger = logging.getLogger("Main")
-
-logger.info('intializing...')
+logger = logging.getLogger('API')
 
 from flask import Flask
 from flask.json.provider import DefaultJSONProvider
 from flask_smorest import Api
 import simplejson as sj
-
-from api.router import api as API
 
 class SimpleJSONProvider(DefaultJSONProvider):
 	def dumps(self, obj: os.Any, **kwargs: os.Any) -> str:
@@ -32,12 +24,19 @@ class SimpleJSONProvider(DefaultJSONProvider):
 	def loads(self, s: str | bytes, **kwargs: os.Any) -> os.Any:
 		return sj.loads(s, **kwargs)
 
+logger.info('intializing API...')
+
 app = Flask(__name__)
 app.json = SimpleJSONProvider(app)
 api = Api(app)
-api.register_blueprint(API)
 
-logger.info('init completed!')
+from routers import payment_api, test_api
+
+for bp in (payment_api, test_api):
+	api.register_blueprint(bp)
+	logger.info(f'"{bp.name}" API loaded!')
+
+logger.info('API ready!')
 # ------------------------------
 
 # add and configure redis on the environment
@@ -55,4 +54,4 @@ logger.info('init completed!')
 # another option would be to use the app1 and app2 to handle the payment processing with yours workers
 # since we can configure uWSGI to have a lot of workers, maybe we can process a lot of requests simultaneously
 # but then I will need to worry about bottlenecks, because if the payments processors become unavailable for so long I'm going to have problems
-# and also, have a lot of workers running is very heavy
+# and also, having a lot of workers running together is very heavy

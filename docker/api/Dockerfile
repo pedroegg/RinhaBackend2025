@@ -10,7 +10,6 @@ RUN ln -fs /usr/share/zoneinfo/America/Sao_Paulo /etc/localtime && \
 
 WORKDIR /code
 COPY app /code
-COPY setup/setup.sh /code/setup.sh
-RUN chmod +x /code/setup.sh
 
-CMD ["/code/setup.sh"]
+ENV PATH="/rinha-backend-2025-venv/bin:${PATH}"
+CMD ["uwsgi", "uwsgi.ini"]

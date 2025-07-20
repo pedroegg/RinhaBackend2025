@@ -5,11 +5,18 @@ Helpers to integrate Flask-smorest with schemas that accepts dataclasses.
 - APIBlueprint: Wrapper/aliases with location already included.
 """
 
+from flask import make_response, Response
 from flask_smorest import Blueprint
 from marshmallow import Schema, pre_dump
+from marshmallow.exceptions import ValidationError
 from dataclasses import asdict, is_dataclass
 from collections.abc import Sequence
 from typing import Any
+from logging import Logger
+import json
+import os
+
+from library.errors import BaseError, InternalError, BadRequest
 
 __all__ = ["BaseSchema", "APIBlueprint"]
 
@@ -25,6 +32,59 @@ class BaseSchema(Schema):
 		return obj
 
 class APIBlueprint(Blueprint):
+	def __init__(
+			self,
+			name: str,
+			import_name: str,
+			logger: Logger | None = None,
+			static_folder: str | os.PathLike[str] | None = None,
+			static_url_path: str | None = None,
+			template_folder: str | os.PathLike[str] | None = None,
+			url_prefix: str | None = None,
+			subdomain: str | None = None,
+			url_defaults: dict[str, Any] | None = None,
+			root_path: str | None = None,
+		):
+		"""Instantiate a new APIBlueprint with already configured error handlers."""
+
+		super().__init__(
+			name=name,
+			import_name=import_name,
+			static_folder=static_folder,
+			static_url_path=static_url_path,
+			template_folder=template_folder,
+			url_prefix=url_prefix,
+			subdomain=subdomain,
+			url_defaults=url_defaults,
+			root_path=root_path,
+		)
+
+		@self.errorhandler(BaseError)
+		def handle_error(e: BaseError) -> Response:
+			payload = {
+				'error': {
+					'code': e.code,
+					'name': e.name,
+					'description': e.description,
+				}
+			}
+
+			res = make_response()
+			res.content_type = 'application/json; charset=utf-8'
+			res.status_code = e.code
+			res.set_data(json.dumps(payload, ensure_ascii=False))
+			return res
+
+		@self.errorhandler(Exception)
+		def handle_exception(e: Exception) -> Response:
+			if isinstance(e, ValidationError):
+				return handle_error(BadRequest(e.normalized_messages()))
+
+			if logger:
+				logger.error(e, exc_info=1)
+
+			return handle_error(InternalError(e.__str__()))
+
 	def header(self, schema: BaseSchema, description: str | None = None):
 		"""Register a schema definition for HTTP headers."""
 		return super().arguments(schema, location='header', description=description)

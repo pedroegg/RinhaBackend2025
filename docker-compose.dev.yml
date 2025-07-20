@@ -1,18 +1,38 @@
 services:
   app-setup:
     environment:
-      ENV: development
+      - ENV=development
 
-  app1:
+  api1:
     environment:
-      ENV: development
-      FLASK_ENV: development
-      FLASK_DEBUG: 1
+      - ENV=development
+      - FLASK_ENV=development
+      - FLASK_DEBUG=1
     restart: "no"
 
-  app2:
+  api2:
     environment:
-      ENV: development
-      FLASK_ENV: development
-      FLASK_DEBUG: 1
+      - ENV=development
+      - FLASK_ENV=development
+      - FLASK_DEBUG=1
+    restart: "no"
+
+  consumer1:
+    environment:
+      - ENV=development
+    restart: "no"
+
+  consumer2:
+    environment:
+      - ENV=development
+    restart: "no"
+
+  consumer3:
+    environment:
+      - ENV=development
+    restart: "no"
+
+  consumer4:
+    environment:
+      - ENV=development
     restart: "no"
