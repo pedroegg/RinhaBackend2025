@@ -41,10 +41,9 @@ logger.info('init completed!')
 # ------------------------------
 
 # add and configure redis on the environment
-# implement redis library for queue (LIST, LPUSH, BRPOP) and for caching (GET, SET, INCR, EXPIRE)
+# implement redis library for queue (LIST, LPUSH, BRPOP or Streams + Consumer Groups) and for caching (GET, SET, INCR, EXPIRE)
 # implement service to use repository inserting (queue) and get data into/from redis
 # implement repository to use redis
-# implement model for responses and payloads
 # implement grafana + prometheus for monitoring
 
 # adjust/configure uWSGI

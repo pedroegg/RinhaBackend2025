@@ -2,39 +2,39 @@ import logging
 logger = logging.getLogger("Router")
 
 from flask import make_response, Response
-from flask_smorest import Blueprint
 from marshmallow.exceptions import ValidationError
-
 import json
-import requests
 
-import api.handler as Handler
+import api.handler as handler
 from api.schema import (
 	ProcessPaymentPayload, ProcessPaymentInput,
-	PaymentSummaryArgs, PaymentSummaryInput, PaymentSummaryOutput
+	PaymentSummaryQuery, PaymentSummaryInput, PaymentSummaryOutput,
+	TestQuery, TestInput,
 )
+from library.flask_utils import APIBlueprint
 from library.errors import BaseError, InternalError, BadRequest
 
-api = Blueprint('api', __name__)
+api = APIBlueprint('api', __name__)
 
 # ------------ API Routes ------------
 
 @api.get('/payments-summary')
-@api.arguments(PaymentSummaryArgs, location='query')
+@api.query(PaymentSummaryQuery)
 @api.response(200, PaymentSummaryOutput)
-def payments_summary(payload: PaymentSummaryInput):
-	return Handler.payments_summary(payload)
+def payments_summary(data: PaymentSummaryInput):
+	return handler.payments_summary(data)
 
 @api.post('/payments')
-@api.arguments(ProcessPaymentPayload, location='json')
+@api.payload(ProcessPaymentPayload)
 @api.response(201)
-def process_payment(payload: ProcessPaymentInput):
-	return Handler.process_payment(payload)
+def process_payment(data: ProcessPaymentInput):
+	return handler.process_payment(data)
 
 @api.get('/test')
+@api.query(TestQuery)
 @api.response(200)
-def test_request():
-	return requests.get('https://httpbin.org/delay/5').json()
+def test_request(data: TestInput):
+	return handler.test(data)
 
 # ------------------------------------
 
