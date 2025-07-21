@@ -3,8 +3,8 @@ logger = logging.getLogger('Handler')
 
 from decimal import Decimal
 
-from entities.payment import PaymentSummaryEntity, PaymentSummaryItem
-from schemas.payment import ProcessPaymentInput, PaymentSummaryInput
+from api.entities.payment import PaymentSummaryEntity, PaymentSummaryItem
+from api.schemas.payment import ProcessPaymentInput, PaymentSummaryInput
 from library.errors import InternalError, BadRequest, UnprocessableEntity
 
 def process_payment(data: ProcessPaymentInput) -> None:

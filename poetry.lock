@@ -178,7 +178,6 @@ description = "Timeout context manager for asyncio programs"
 optional = false
 python-versions = ">=3.8"
 groups = ["main"]
-markers = "python_full_version < \"3.11.3\""
 files = [
     {file = "async_timeout-5.0.1-py3-none-any.whl", hash = "sha256:39e3809566ff85354557ec2398b55e096c8364bacac9405a7a1fa429e77fe76c"},
     {file = "async_timeout-5.0.1.tar.gz", hash = "sha256:d9321a7a3d5a6a5e187e824d2fa0793ce379a202935782d555d6e9d2735677d3"},
@@ -1316,6 +1315,17 @@ socks = ["pysocks (>=1.5.6,!=1.5.7,<2.0)"]
 zstd = ["zstandard (>=0.18.0)"]
 
 [[package]]
+name = "uwsgi"
+version = "2.0.30"
+description = "The uWSGI server"
+optional = false
+python-versions = "*"
+groups = ["main"]
+files = [
+    {file = "uwsgi-2.0.30.tar.gz", hash = "sha256:c12aa652124f062ac216077da59f6d247bd7ef938234445881552e58afb1eb5f"},
+]
+
+[[package]]
 name = "webargs"
 version = "8.7.0"
 description = "Declarative parsing and validation of HTTP request objects, with built-in support for popular web frameworks, including Flask, Django, Bottle, Tornado, Pyramid, Falcon, and aiohttp."
@@ -1476,5 +1486,5 @@ propcache = ">=0.2.1"
 
 [metadata]
 lock-version = "2.1"
-python-versions = ">=3.11"
-content-hash = "1692de879689e73787ab0a0c0f5782bd9c62df00415b793f5c58cc49dc5e1657"
+python-versions = "==3.11.2"
+content-hash = "289af98ec39247d7fcf767f0b2b07d75eb611d76252f5a0b46259c35ce8b7aba"

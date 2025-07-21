@@ -14,6 +14,9 @@ import logging
 logging.basicConfig(level=int(os.getenv('LOG_LEVEL')), force=True)
 logger = logging.getLogger('Consumer')
 
+# omitting libs DEBUG logs when in dev
+logging.getLogger("asyncio").setLevel(logging.INFO)
+
 logger.info('initializing...')
 
 import asyncio
@@ -30,6 +33,8 @@ logger.info('init completed!')
 
 async def worker():
 	while not stop_event.is_set():
+		print(f'worker running on {asyncio.get_running_loop().time()}')
+
 		try:
 			msgs = []
 
@@ -39,6 +44,8 @@ async def worker():
 
 		for msg in msgs:
 			a = 1
+
+		await asyncio.sleep(10) #remove later
 
 async def main():
 	loop = asyncio.get_running_loop()

@@ -1,15 +1,16 @@
-# ----- ANY ------
-build:
+# ----- PROD -----
+build-prod:
 	@echo "generating project requirements..."
 	@poetry export --without-hashes --format=requirements.txt > app/requirements.txt
 	@echo "building images with compose...";
 	@docker compose build
-# ----------------
 
-# ----- PROD -----
 push:
 	@echo "pushing images with compose...";
 	@docker compose push
+
+run-prod:
+	@docker compose -f docker-compose.yml up
 # ----------------
 
 # ----- DEV ------
@@ -23,7 +24,18 @@ update-deps:
 	@poetry lock
 	@poetry install
 
-run:
+run-payment-processor:
 	@cd payment-processor; docker compose up
-	@docker compose --env-file app/.env -f docker-compose.yml -f docker-compose.dev.yml up
+
+build-dev:
+	@echo "generating project requirements..."
+	@poetry export --without-hashes --format=requirements.txt > app/requirements.txt
+	@echo "building images with compose...";
+	@docker compose -f docker-compose.yml -f docker-compose.dev.yml build
+
+run-dev:
+	@docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+
+run-local:
+	@cd app; uwsgi --http-socket 0.0.0.0:9999 --ini uwsgi.ini
 # ----------------

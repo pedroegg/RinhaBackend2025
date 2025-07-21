@@ -4,8 +4,8 @@ logger = logging.getLogger("Router")
 from library.flask_utils import APIBlueprint
 from library.errors import BaseError, InternalError, BadRequest
 
-from handlers import test as handler
-from schemas.test import TestQuery, TestInput
+from api.handlers import test as handler
+from api.schemas.test import TestQuery, TestInput
 
 api = APIBlueprint(name='test', import_name=__name__, logger=logger)
 

@@ -17,6 +17,9 @@ services:
       - FLASK_DEBUG=1
     restart: "no"
 
+  redis:
+    restart: "no"
+
   consumer1:
     environment:
       - ENV=development

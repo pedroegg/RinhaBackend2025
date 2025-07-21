@@ -4,8 +4,8 @@ logger = logging.getLogger("Router")
 from library.flask_utils import APIBlueprint
 from library.errors import BaseError, InternalError, BadRequest
 
-from handlers import payment as handler
-from schemas.payment import (
+from api.handlers import payment as handler
+from api.schemas.payment import (
 	ProcessPaymentPayload, ProcessPaymentInput,
 	PaymentSummaryQuery, PaymentSummaryInput, PaymentSummaryOutput,
 )
