@@ -1,5 +1,5 @@
 import logging
-logger = logging.getLogger('Handler')
+logger = logging.getLogger('Payment handler')
 
 from decimal import Decimal
 

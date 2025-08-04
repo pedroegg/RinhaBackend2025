@@ -1,5 +1,5 @@
 import logging
-logger = logging.getLogger("Router")
+logger = logging.getLogger("Payment router")
 
 from library.flask_utils import APIBlueprint
 from library.errors import BaseError, InternalError, BadRequest

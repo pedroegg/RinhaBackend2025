@@ -50,6 +50,7 @@ logger.info('ready!')
 # implement service to use repository inserting (queue) and get data into/from redis
 # implement repository to use redis
 # implement grafana + prometheus for monitoring
+# check why all the schemas aren't appearing on the generated doc
 
 # use redis as a queue integrated with the both app instances (read-only) to handle instabilities and avoiding inconsistency
 # insert into redis the payments to be processed and let one or more consumers handle them (with tenacity retrying + using the fallback payment processor)
