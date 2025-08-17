@@ -1,77 +1,121 @@
 import logging
 logger = logging.getLogger('Redis')
 
-import redis
-from redis.retry import Retry
-from redis.backoff import ExponentialWithJitterBackoff
-from redis.cache import CacheConfig, CacheInterface
 import os
+from typing import Any, Dict, Iterable, List, Tuple
+
+import redis
 
 HOST = os.getenv('REDIS_HOST')
 if not HOST:
-    raise RuntimeError('missing "REDIS_HOST" env var')
+	raise RuntimeError('missing "REDIS_HOST" env var')
 
-PORT = os.getenv('REDIS_PORT')
-if not PORT:
-    raise RuntimeError('missing "REDIS_PORT" env var')
+PORT_RAW = os.getenv('REDIS_PORT')
+if not PORT_RAW:
+	raise RuntimeError('missing "REDIS_PORT" env var')
 
-DB = os.getenv('REDIS_DB')
-if not DB:
-    raise RuntimeError('missing "REDIS_DB" env var')
+DB_RAW = os.getenv('REDIS_DB')
+if not DB_RAW:
+	raise RuntimeError('missing "REDIS_DB" env var')
 
-PORT = int(PORT)
-DB = int(DB)
+PORT = int(PORT_RAW)
+DB = int(DB_RAW)
 
-class Redis:
-    _client: redis.Redis
+class RedisClient:
+	def __init__(self) -> None:
+		self._client = redis.Redis(
+			host=HOST,
+			port=PORT,
+			db=DB,
+			decode_responses=True,
+			socket_timeout=5,
+			socket_connect_timeout=5,
+			health_check_interval=30,
+		)
 
-    #use socket as connectionPool class
-    #check if protocol 3 is better
-    #adjust the retry policy
-    #single connection client?
-    #adjust retry on error
-    #decode_response?
+	# --------------- Cache helpers ---------------
+	def get(self, key: str) -> str | None:
+		return self._client.get(key)
 
-    #consistency on redis through pipeline (like db tx) or setup a lock/maplock with redis?
+	def set(self, key: str, value: str, ex_seconds: int | None = None) -> bool:
+		return bool(self._client.set(name=key, value=value, ex=ex_seconds))
 
-    #update the value after each execution of payment (lock, read, update, unlock)
-    #or
-    #after amount of times (local_counter += 1... then after x minutes update redis counter (lock, read, update, unlock))?
-    #for this second option, we would have to stop reading and processing messages after the redis update and until before the summary check
-    #and after the summary check, we can handle the messages again. The strategy would be using a lock for the summary-check
-    #if the lock is off (summary checked), local_counter=0, we can handle messages, and when it's on (after current instance redis update and until before summary check happens), we wait.
+	def incrby(self, key: str, amount: int = 1) -> int:
+		return int(self._client.incrby(name=key, amount=amount))
 
-    #make the API also use the redis lock/maplock to read?
+	# --------------- Stream helpers ---------------
+	def create_consumer_group(self, stream: str, group: str) -> None:
+		try:
+			self._client.xgroup_create(name=stream, groupname=group, id='$', mkstream=True)
+			logger.info(f'created consumer group {group} for stream {stream}')
+		
+		except redis.ResponseError as e:
+			if 'BUSYGROUP' in str(e):
+				return
+			
+			raise
+
+	def add_to_stream(self, stream: str, fields: Dict[str, Any]) -> str:
+		return str(self._client.xadd(name=stream, fields=fields))
+
+	def read_group(
+		self,
+		stream: str,
+		group: str,
+		consumer: str,
+		count: int = 10,
+		block_ms: int = 5000,
+	) -> List[Tuple[str, Dict[str, str]]]:
+		messages = self._client.xreadgroup(
+			groupname=group,
+			consumername=consumer,
+			streams={stream: '>'},
+			count=count,
+			block=block_ms,
+		)
+
+		if not messages:
+			return []
+		
+		_, items = messages[0]
+		return [(mid, {k: v for k, v in data.items()}) for (mid, data) in items]
+
+	def ack(self, stream: str, group: str, message_id: str) -> int:
+		return int(self._client.xack(name=stream, groupname=group, id=message_id))
+
+	def pending(self, stream: str, group: str, idle_ms: int, count: int = 50) -> List[str]:
+		# Get a range of pending messages older than idle_ms
+		try:
+			pendings = self._client.xpending_range(name=stream, groupname=group, min_idle_time=idle_ms, start='-', end='+', count=count)
+		
+		except AttributeError:
+			# Fallback for clients without xpending_range
+			info = self._client.xpending(name=stream, groupname=group)
+			if not info or info.get('pending') == 0:
+				return []
+			
+			pendings = []
+		
+		return [p['message_id'] if isinstance(p, dict) else p[0] for p in pendings]
+
+	def claim(self, stream: str, group: str, consumer: str, min_idle_ms: int, message_ids: Iterable[str]) -> List[str]:
+		if not message_ids:
+			return []
+		
+		try:
+			claimed = self._client.xclaim(name=stream, groupname=group, consumername=consumer, min_idle_time=min_idle_ms, message_ids=list(message_ids))
+		except redis.ResponseError:
+			return []
+		
+		return [mid for (mid, _data) in claimed]
 
 
+# Singleton instance
+_instance: RedisClient | None = None
 
-    #singleton and on repo do 'from lib.redis import Redis' then 'Redis().get()' or 'Redis().execute()' or 'Redis.get()'?
-    #or
-    #dependency injection through a repo initializer receiving the instance of database to use, then 'self.redis.get()' or 'self.db.get()'
-
-    def __init__(self) -> None:
-        self._client = redis.Redis(
-            host=HOST,
-            port=PORT,
-            db=DB,
-            connection_pool=redis.ConnectionPool(
-                connection_class=redis.UnixDomainSocketConnection(
-                    host=HOST,
-                    port=PORT,
-                    db=DB,
-                ),
-            ),
-            decode_responses=False,
-            max_connections=None,
-            single_connection_client=False,
-            retry_on_timeout=False,
-            retry_on_error=None,
-            retry=Retry(
-                backoff=ExponentialWithJitterBackoff(base=1, cap=10),
-                retries=3,
-            ),
-            protocol=3,
-        )
-
-    def __del__(self):
-        self._client.close()
+def new_client() -> RedisClient:
+	global _instance
+	if _instance is None:
+		_instance = RedisClient()
+	
+	return _instance

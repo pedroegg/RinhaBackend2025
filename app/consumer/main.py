@@ -21,9 +21,14 @@ logger.info('initializing...')
 
 import asyncio
 import signal
+from decimal import Decimal
+from typing import List, Tuple, Dict
+
+from domain.repository.payment import PaymentRepository
+
+repo = PaymentRepository()
 
 stop_event = asyncio.Event()
-
 def _graceful_shutdown():
 	logger.info('signal received, shutting down...')
 	stop_event.set()
@@ -31,21 +36,36 @@ def _graceful_shutdown():
 logger.info('init completed!')
 # ---------------------------------
 
-async def worker():
+async def worker(consumer_name: str):
 	while not stop_event.is_set():
-		print(f'worker running on {asyncio.get_running_loop().time()}')
-
 		try:
-			msgs = []
-
+			messages: List[Tuple[str, Dict[str, str]]] = repo.read_payments(
+				consumer_name=consumer_name,
+				count=16,
+				block_ms=5000,
+			)
+		
 		except Exception as e:
-			logger.error('failed to consume from redis')
+			logger.exception('failed to read from redis stream')
+			await asyncio.sleep(1)
 			continue
 
-		for msg in msgs:
-			a = 1
+		if not messages:
+			continue
 
-		await asyncio.sleep(10) #remove later
+		for message_id, data in messages:
+			try:
+				amount = Decimal(str(data.get('amount', '0')))
+				
+				# process the payment here (call external processor, etc.)
+				# on success:
+				
+				repo.increment_processed(amount=amount)
+				repo.ack_payment(message_id)
+			
+			except Exception:
+				logger.exception(f'failed to process message {message_id}')
+				continue
 
 async def main():
 	loop = asyncio.get_running_loop()

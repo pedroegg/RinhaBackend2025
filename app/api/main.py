@@ -27,6 +27,25 @@ class SimpleJSONProvider(DefaultJSONProvider):
 
 logger.info('intializing...')
 
+import library.redis as redis
+from domain.repository.payment import PaymentRepository
+from domain.service.payment import PaymentService
+
+import api.routers.payment as payment_router
+import api.routers.test as test_router
+
+db = redis.new_client()
+db.create_consumer_group(
+	stream=os.getenv('PAYMENTS_STREAM'),
+	group=os.getenv('PAYMENTS_GROUP'),
+)
+
+payment_repository = PaymentRepository(db)
+payment_service = PaymentService(payment_repository)
+
+payment_api = payment_router.new(payment_service)
+test_api = test_router.new()
+
 app = Flask(__name__)
 app.config['API_TITLE'] = os.getenv('API_TITLE')
 app.config['API_VERSION'] = os.getenv('API_VERSION')
@@ -38,13 +57,16 @@ app.config['OPENAPI_SWAGGER_UI_URL'] = os.getenv('OPENAPI_SWAGGER_UI_URL')
 app.json = SimpleJSONProvider(app)
 api = Api(app)
 
-from api.routers import payment_api, test_api
-
-for bp in (payment_api, test_api):
-	api.register_blueprint(bp)
-	logger.info(f'{bp.name} API loaded!')
+for r in (payment_api, test_api):
+	api.register_blueprint(r)
+	logger.info(f'{r.name} API loaded!')
 
 logger.info('ready!')
+
+
+
+
+
 
 # implement redis library for queue (LIST, LPUSH, BRPOP or Streams + Consumer Groups) and for caching (GET, SET, INCR, EXPIRE)
 # implement service to use repository inserting (queue) and get data into/from redis

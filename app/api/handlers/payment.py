@@ -3,19 +3,29 @@ logger = logging.getLogger('Payment handler')
 
 from decimal import Decimal
 
-from api.entities.payment import PaymentSummaryEntity, PaymentSummaryItem
-from api.schemas.payment import ProcessPaymentInput, PaymentSummaryInput
+from domain.service.payment import PaymentService
+
+from api.schemas.payment import (
+	ProcessPaymentInput,
+	PaymentSummaryInput, PaymentSummaryOutput
+)
+
 from library.errors import InternalError, BadRequest, UnprocessableEntity
 
-def process_payment(data: ProcessPaymentInput) -> None:
-	# insert payment into redis queue
+class PaymentHandler:
+	service: PaymentService
 
-	return None
+	def __init__(self, service: PaymentService) -> None:
+		self.service = service
 
-def payments_summary(data: PaymentSummaryInput) -> PaymentSummaryEntity:
-	summary = PaymentSummaryEntity(
-		default=PaymentSummaryItem(43236, Decimal(415542345.98)),
-		fallback=PaymentSummaryItem(423545, Decimal(329347.34)),
-	)
+	def process_payment(self, data: ProcessPaymentInput) -> None:
+		self.service.process_payment(
+			correlation_id=str(data['correlation_id']),
+			amount=Decimal(data['amount']),
+		)
+		
+		return None
 
-	return summary
+	def payments_summary(self, data: PaymentSummaryInput) -> PaymentSummaryOutput:
+		#ver se converte o entity pro output msm ou se precisa fazer na mão
+		return self.service.get_summary(data['start'], data['end'])
